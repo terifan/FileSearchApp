@@ -20,6 +20,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import org.terifan.io.Streams;
 import org.terifan.ui.Utilities;
+import org.terifan.util.ErrorReportWindow;
 import org.terifan.util.log.Log;
 
 
@@ -69,6 +70,9 @@ public class FileSearch
 				{
 					new Thread()
 					{
+						int mFileCount;
+						int mFileSize;
+
 						@Override
 						public void run()
 						{
@@ -79,44 +83,67 @@ public class FileSearch
 								resultListModel.clear();
 								fileOutput.setText("");
 
-								for (File file : new File(path.getText()).listFiles(e->e.isFile()))
-								{
-									try
-									{
-										byte[] buffer = Streams.readAll(file);
-										String src = new String(buffer).toLowerCase();
-										boolean rowFound = false;
-										for (JTextField[] tfs : search)
-										{
-											boolean elementFound = true;
-											boolean hasValue = false;
-											for (JTextField tf : tfs)
-											{
-												if (!tf.getText().isEmpty())
-												{
-													elementFound &= src.contains(tf.getText().toLowerCase());
-													hasValue = true;
-												}
-											}
-											if (hasValue)
-											{
-												rowFound |= elementFound;
-											}
-										}
-										if (rowFound)
-										{
-											resultListModel.addElement(file);
-										}
-									}
-									catch (IOException e)
-									{
-										e.printStackTrace(Log.out);
-									}
-								}
+								searchDir(new File(path.getText()));
+
+								fileOutput.setText("Finished searching " + mFileCount + " files (" + mFileSize/1024/1024 + " MiB)");
+								resultList.invalidate();
+								resultList.revalidate();
+							}
+							catch (Exception e)
+							{
+								ErrorReportWindow.show(e);
 							}
 							finally
 							{
 								button.setEnabled(true);
+							}
+						}
+
+						private void searchDir(File aDirectory) throws IOException
+						{
+							for (File file : aDirectory.listFiles())
+							{
+								if (file.isFile())
+								{
+									searchFile(file);
+								}
+								else
+								{
+									searchDir(file);
+								}
+							}
+						}
+
+
+						private void searchFile(File aFile) throws IOException
+						{
+							byte[] buffer = Streams.readAll(aFile);
+							String src = new String(buffer).toLowerCase();
+							boolean rowFound = false;
+
+							mFileCount++;
+							mFileSize+=buffer.length;
+
+							for (JTextField[] tfs : search)
+							{
+								boolean elementFound = true;
+								boolean hasValue = false;
+								for (JTextField tf : tfs)
+								{
+									if (!tf.getText().isEmpty())
+									{
+										elementFound &= src.contains(tf.getText().toLowerCase());
+										hasValue = true;
+									}
+								}
+								if (hasValue)
+								{
+									rowFound |= elementFound;
+								}
+							}
+							if (rowFound)
+							{
+								resultListModel.addElement(aFile);
 							}
 						}
 					}.start();
