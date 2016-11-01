@@ -62,7 +62,7 @@ public class FileSearch
 				}
 			});
 
-			AbstractAction action = new AbstractAction("Search")
+			AbstractAction action = new AbstractAction("Search files")
 			{
 				DefaultListModel<File> resultListModel;
 
