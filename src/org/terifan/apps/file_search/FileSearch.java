@@ -49,12 +49,15 @@ public class FileSearch
 
 			resultList.addListSelectionListener(aEvent ->
 			{
-				if (!aEvent.getValueIsAdjusting())
+				if (!aEvent.getValueIsAdjusting() && resultListModel.size() > resultList.getSelectedIndex())
 				{
 					try
 					{
-						fileOutput.setText(new String(Streams.readAll(resultListModel.get(aEvent.getFirstIndex()))));
+						fileOutput.setText(new String(Streams.readAll(resultListModel.get(resultList.getSelectedIndex()))));
 						fileOutput.setCaretPosition(0);
+						fileOutput.invalidate();
+						fileOutput.validate();
+						fileOutput.repaint();
 					}
 					catch (IOException e)
 					{
