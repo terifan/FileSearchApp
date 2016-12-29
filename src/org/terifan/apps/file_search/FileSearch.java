@@ -7,6 +7,7 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import javax.swing.AbstractAction;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -20,6 +21,8 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import org.terifan.io.Streams;
 import org.terifan.ui.Utilities;
+import org.terifan.ui.statusbar.StatusBar;
+import org.terifan.ui.statusbar.StatusBarField;
 import org.terifan.util.ErrorReportWindow;
 import org.terifan.util.log.Log;
 
@@ -32,12 +35,20 @@ public class FileSearch
 		{
 			Utilities.setSystemLookAndFeel();
 
-			JTextField path = new JTextField();
-			JTextField[][] search = new JTextField[3][3];
-			DefaultListModel<File> resultListModel = new DefaultListModel<>();
-			JList<File> resultList = new JList<>(resultListModel);
-			JButton button = new JButton();
-			JTextArea fileOutput = new JTextArea();
+			final JTextField path = new JTextField();
+			final JTextField[][] search = new JTextField[3][3];
+			final DefaultListModel<File> resultListModel = new DefaultListModel<>();
+			final JList<File> resultList = new JList<>(resultListModel);
+			final JButton button = new JButton();
+			final JTextArea fileOutput = new JTextArea();
+
+			final StatusBar statusBar = new StatusBar();
+			StatusBarField statusCount = new StatusBarField("");
+			StatusBarField statusResultCount = new StatusBarField("");
+			StatusBarField statusFile = new StatusBarField("");
+			statusBar.add(statusCount.setBorderStyle(StatusBarField.LOWERED));
+			statusBar.add(statusResultCount.setBorderStyle(StatusBarField.LOWERED));
+			statusBar.add(statusFile.setBorderStyle(StatusBarField.LOWERED));
 
 			for (int i = 0; i < search.length; i++)
 			{
@@ -49,7 +60,7 @@ public class FileSearch
 
 			resultList.addListSelectionListener(aEvent ->
 			{
-				if (!aEvent.getValueIsAdjusting() && resultListModel.size() > resultList.getSelectedIndex())
+				if (!aEvent.getValueIsAdjusting() && resultList.getSelectedIndex() != -1)
 				{
 					try
 					{
@@ -68,8 +79,6 @@ public class FileSearch
 
 			AbstractAction action = new AbstractAction("Search files")
 			{
-				DefaultListModel<File> resultListModel;
-
 				@Override
 				public void actionPerformed(ActionEvent aE)
 				{
@@ -85,12 +94,11 @@ public class FileSearch
 							{
 								button.setEnabled(false);
 
-								resultListModel = new DefaultListModel<>();
+								resultList.clearSelection();
+								resultListModel.clear();
 								fileOutput.setText("");
 
 								searchDir(new File(path.getText()));
-
-								fileOutput.setText("Finished searching " + mFileCount + " files (" + mFileSize/1024/1024 + " MiB)");
 
 								resultList.setModel(resultListModel);
 								resultList.invalidate();
@@ -131,15 +139,19 @@ public class FileSearch
 							mFileCount++;
 							mFileSize+=buffer.length;
 
+							statusCount.setText(mFileCount + " files searched");
+							statusFile.setText("Reading " + aFile.getAbsolutePath());
+							statusBar.repaint();
+
 							for (JTextField[] tfs : search)
 							{
 								boolean elementFound = true;
 								boolean hasValue = false;
 								for (JTextField tf : tfs)
 								{
-									if (!tf.getText().isEmpty())
+									if (!tf.getText().trim().isEmpty())
 									{
-										elementFound &= src.contains(tf.getText().toLowerCase());
+										elementFound &= src.contains(tf.getText().trim().toLowerCase());
 										hasValue = true;
 									}
 								}
@@ -151,6 +163,8 @@ public class FileSearch
 							if (rowFound)
 							{
 								resultListModel.addElement(aFile);
+								statusResultCount.setText(resultListModel.size() + " files found");
+								statusBar.repaint();
 							}
 						}
 					}.start();
@@ -202,11 +216,15 @@ public class FileSearch
 			c.insets = new Insets(0, 0, 4, 0);
 			inputPanel.add(searchPanel, c);
 
+			JPanel progressPanel = new JPanel(new BorderLayout());
+			progressPanel.add(statusBar, BorderLayout.CENTER);
+
 			JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(resultList), new JScrollPane(fileOutput));
 
 			JPanel mainPanel = new JPanel(new BorderLayout());
 			mainPanel.add(inputPanel, BorderLayout.NORTH);
 			mainPanel.add(splitPane, BorderLayout.CENTER);
+			mainPanel.add(progressPanel, BorderLayout.SOUTH);
 
 			JFrame frame = new JFrame("FileSearch");
 			frame.add(mainPanel);
