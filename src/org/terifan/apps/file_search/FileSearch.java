@@ -32,11 +32,12 @@ public class FileSearch
 		{
 			Utilities.setSystemLookAndFeel();
 
-			final JTextField path = new JTextField();
-			final JTextField[][] search = new JTextField[3][3];
-			final JList<File> resultList = new JList<>();
-			final JButton button = new JButton();
-			final JTextArea fileOutput = new JTextArea();
+			JTextField path = new JTextField();
+			JTextField[][] search = new JTextField[3][3];
+			DefaultListModel<File> resultListModel = new DefaultListModel<>();
+			JList<File> resultList = new JList<>(resultListModel);
+			JButton button = new JButton();
+			JTextArea fileOutput = new JTextArea();
 
 			for (int i = 0; i < search.length; i++)
 			{
@@ -90,7 +91,7 @@ public class FileSearch
 								searchDir(new File(path.getText()));
 
 								fileOutput.setText("Finished searching " + mFileCount + " files (" + mFileSize/1024/1024 + " MiB)");
-								
+
 								resultList.setModel(resultListModel);
 								resultList.invalidate();
 								resultList.revalidate();
