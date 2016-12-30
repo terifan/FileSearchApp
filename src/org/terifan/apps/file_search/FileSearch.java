@@ -7,7 +7,6 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import javax.swing.AbstractAction;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -43,9 +42,9 @@ public class FileSearch
 			final JTextArea fileOutput = new JTextArea();
 
 			final StatusBar statusBar = new StatusBar();
-			StatusBarField statusCount = new StatusBarField("");
-			StatusBarField statusResultCount = new StatusBarField("");
-			StatusBarField statusFile = new StatusBarField("");
+			StatusBarField statusCount = new StatusBarField(" ");
+			StatusBarField statusResultCount = new StatusBarField(" ");
+			StatusBarField statusFile = new StatusBarField(" ").setResize(StatusBarField.Resize.SPRING);
 			statusBar.add(statusCount.setBorderStyle(StatusBarField.LOWERED));
 			statusBar.add(statusResultCount.setBorderStyle(StatusBarField.LOWERED));
 			statusBar.add(statusFile.setBorderStyle(StatusBarField.LOWERED));
@@ -100,7 +99,9 @@ public class FileSearch
 
 								searchDir(new File(path.getText()));
 
-								resultList.setModel(resultListModel);
+								statusFile.setText("Done");
+								statusBar.repaint();
+
 								resultList.invalidate();
 								resultList.revalidate();
 							}
