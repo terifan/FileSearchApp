@@ -4,13 +4,12 @@ import java.awt.BorderLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.awt.Point;
-import java.awt.datatransfer.DataFlavor;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.UUID;
 import javax.swing.AbstractAction;
+import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -36,13 +35,14 @@ import org.terifan.util.log.Log;
 public class FileSearch
 {
 	private JTextField mPath;
+	private JTextField mFilter;
 	private JTextField[][] mSearchFields;
 	private DefaultListModel<File> mResultListModel;
 	private JList<File> mResultList;
 	private JButton mSearchButton;
 	private JTextArea mOutputField;
 	private StatusBar mStatusBar;
-	private StatusBarField mStatusCount;
+	private StatusBarField mStatusCounter;
 	private StatusBarField mStatusResultCount;
 	private StatusBarField mStatusFile;
 
@@ -52,15 +52,16 @@ public class FileSearch
 		Utilities.setSystemLookAndFeel();
 
 		mPath = new JTextField();
+		mFilter = new JTextField();
 		mSearchFields = new JTextField[5][3];
 		mResultListModel = new DefaultListModel<>();
 		mOutputField = new JTextArea();
 
-		mStatusCount = new StatusBarField(" ");
+		mStatusCounter = new StatusBarField(" ");
 		mStatusResultCount = new StatusBarField(" ");
 		mStatusFile = new StatusBarField(" ").setResize(StatusBarField.Resize.SPRING);
 		mStatusBar = new StatusBar();
-		mStatusBar.add(mStatusCount.setBorderStyle(StatusBarField.LOWERED));
+		mStatusBar.add(mStatusCounter.setBorderStyle(StatusBarField.LOWERED));
 		mStatusBar.add(mStatusResultCount.setBorderStyle(StatusBarField.LOWERED));
 		mStatusBar.add(mStatusFile.setBorderStyle(StatusBarField.LOWERED));
 
@@ -95,25 +96,40 @@ public class FileSearch
 		}
 
 		JPanel inputPanel = new JPanel(new GridBagLayout());
+		inputPanel.setBorder(BorderFactory.createEmptyBorder(4, 2, 0, 2));
+
 		c.insets = new Insets(0, 2, 2, 2);
 		c.gridx = 0;
 		c.gridy = 0;
+		c.weightx = 0;
 		c.fill = GridBagConstraints.HORIZONTAL;
 		inputPanel.add(new JLabel("Path"), c);
-		c.gridx = 0;
-		c.gridy = 1;
+		c.gridx = 1;
 		c.weightx = 1;
 		inputPanel.add(mPath, c);
-		c.gridx = 1;
+		c.gridx = 2;
 		c.weightx = 0;
+		c.fill = GridBagConstraints.BOTH;
+		c.gridheight = 2;
 		inputPanel.add(mSearchButton, c);
+
+		c.gridx = 0;
+		c.gridy = 1;
+		c.weightx = 0;
+		c.gridheight = 1;
+		inputPanel.add(new JLabel("Filter"), c);
+		c.gridx = 1;
+		c.weightx = 1;
+		inputPanel.add(mFilter, c);
+
 		c.gridx = 0;
 		c.gridy = 2;
+		c.gridwidth = 3;
 		inputPanel.add(new JLabel("Search"), c);
 		c.gridx = 0;
 		c.gridy = 3;
-		c.gridwidth = 2;
 		c.insets = new Insets(0, 0, 4, 0);
+
 		inputPanel.add(searchPanel, c);
 
 		JPanel progressPanel = new JPanel(new BorderLayout());
@@ -180,8 +196,11 @@ public class FileSearch
 						mResultList.clearSelection();
 						mResultListModel.clear();
 						mOutputField.setText("");
+						mStatusCounter.setText("");
+						mStatusFile.setText("");
+						mStatusResultCount.setText("No results");
 
-						searchDir(new File(mPath.getText()));
+						searchDir(new File(mPath.getText()), mFilter.getText());
 
 						mStatusFile.setText("Done");
 						mStatusBar.repaint();
@@ -200,17 +219,35 @@ public class FileSearch
 				}
 
 
-				private void searchDir(File aDirectory) throws IOException
+				private void searchDir(File aDirectory, String aFilter) throws IOException
 				{
 					for (File file : aDirectory.listFiles())
 					{
 						if (file.isFile())
 						{
-							searchFile(file);
+							boolean ok = aFilter.isEmpty();
+
+							String fileName = file.getName().toLowerCase();
+							for (String s : aFilter.split(" "))
+							{
+								if (s.startsWith("*"))
+								{
+									ok |= fileName.endsWith(s.substring(1));
+								}
+								if (s.endsWith("*"))
+								{
+									ok |= fileName.startsWith(s.substring(0, s.length()-1));
+								}
+							}
+
+							if (ok)
+							{
+								searchFile(file);
+							}
 						}
 						else
 						{
-							searchDir(file);
+							searchDir(file, aFilter);
 						}
 					}
 				}
@@ -225,7 +262,7 @@ public class FileSearch
 					mFileCount++;
 					mFileSize += buffer.length;
 
-					mStatusCount.setText(mFileCount + " files searched");
+					mStatusCounter.setText(mFileCount + " files searched");
 					mStatusFile.setText("Reading " + aFile.getAbsolutePath());
 					mStatusBar.repaint();
 
@@ -271,7 +308,8 @@ public class FileSearch
 	{
 		try
 		{
-			new FileSearch();
+			System.out.println(UUID.randomUUID());
+//			new FileSearch();
 		}
 		catch (Throwable e)
 		{
