@@ -7,7 +7,6 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
-import java.util.UUID;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
@@ -308,8 +307,7 @@ public class FileSearch
 	{
 		try
 		{
-			System.out.println(UUID.randomUUID());
-//			new FileSearch();
+			new FileSearch();
 		}
 		catch (Throwable e)
 		{
