@@ -67,7 +67,7 @@ public class FileSearch
 		mResultList = new JList<>(mResultListModel);
 		mResultList.addListSelectionListener(mListSelectionListener);
 
-		DragAndDrop.register(mResultList, pt->FILE_FLAVOR, pt->mResultList.getSelectedValuesList(), null);
+		DragAndDrop.register(mResultList, pt -> FILE_FLAVOR, pt -> mResultList.getSelectedValuesList(), null);
 
 		mSearchButton = new JButton(mSearchAction);
 
@@ -121,12 +121,16 @@ public class FileSearch
 		c.weightx = 1;
 		inputPanel.add(mFilter, c);
 
-		c.gridx = 0;
+		c.gridx = 1;
 		c.gridy = 2;
+		inputPanel.add(new JLabel("Use asterix for unknown characters, e.g. *.xml"), c);
+
+		c.gridx = 0;
+		c.gridy = 3;
 		c.gridwidth = 3;
 		inputPanel.add(new JLabel("Search"), c);
 		c.gridx = 0;
-		c.gridy = 3;
+		c.gridy = 4;
 		c.insets = new Insets(0, 0, 4, 0);
 
 		inputPanel.add(searchPanel, c);
@@ -153,7 +157,7 @@ public class FileSearch
 	{
 		if (!aEvent.getValueIsAdjusting() && mResultList.getSelectedIndex() != -1)
 		{
-			SwingUtilities.invokeLater(()->
+			SwingUtilities.invokeLater(() ->
 			{
 				try
 				{
@@ -224,22 +228,9 @@ public class FileSearch
 					{
 						if (file.isFile())
 						{
-							boolean ok = aFilter.isEmpty();
+							String name = file.getName().toLowerCase();
 
-							String fileName = file.getName().toLowerCase();
-							for (String s : aFilter.split(" "))
-							{
-								if (s.startsWith("*"))
-								{
-									ok |= fileName.endsWith(s.substring(1));
-								}
-								if (s.endsWith("*"))
-								{
-									ok |= fileName.startsWith(s.substring(0, s.length()-1));
-								}
-							}
-
-							if (ok)
+							if (aFilter.isEmpty() || name.matches(aFilter.replace(".", "\\.").replace("*", ".*")))
 							{
 								searchFile(file);
 							}
@@ -284,7 +275,7 @@ public class FileSearch
 					}
 					if (rowFound)
 					{
-						SwingUtilities.invokeLater(()->
+						SwingUtilities.invokeLater(() ->
 						{
 							try
 							{
