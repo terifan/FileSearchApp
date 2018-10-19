@@ -224,7 +224,15 @@ public class FileSearch
 
 				private void searchDir(File aDirectory, String aFilter) throws IOException
 				{
-					for (File file : aDirectory.listFiles())
+					System.out.println("Visting directory: " + aDirectory);
+
+					long start = System.currentTimeMillis();
+
+					File[] listFiles = aDirectory.listFiles();
+
+					System.out.println(listFiles.length + " loaded in " + (System.currentTimeMillis() - start));
+
+					for (File file : listFiles)
 					{
 						if (file.isFile())
 						{
