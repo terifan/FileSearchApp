@@ -19,7 +19,9 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
+import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import org.terifan.io.Streams;
 import org.terifan.ui.DragAndDrop;
@@ -65,9 +67,10 @@ public class FileSearch
 		mStatusBar.add(mStatusFile.setBorderStyle(StatusBarField.LOWERED));
 
 		mResultList = new JList<>(mResultListModel);
+		mResultList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		mResultList.addListSelectionListener(mListSelectionListener);
 
-		DragAndDrop.register(mResultList, pt -> FILE_FLAVOR, pt -> mResultList.getSelectedValuesList(), null);
+		DragAndDrop.register(mResultList, pt -> FILE_FLAVOR, pt -> {System.out.println(mResultList.getSelectedValuesList().size()); return mResultList.getSelectedValuesList().toArray(new File[mResultList.getSelectedValuesList().size()]);}, null);
 
 		mSearchButton = new JButton(mSearchAction);
 
