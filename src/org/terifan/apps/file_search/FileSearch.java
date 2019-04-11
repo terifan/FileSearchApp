@@ -11,17 +11,16 @@ import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
+import javax.swing.JEditorPane;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
-import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import org.terifan.io.Streams;
 import org.terifan.ui.DragAndDrop;
@@ -41,7 +40,7 @@ public class FileSearch
 	private DefaultListModel<File> mResultListModel;
 	private JList<File> mResultList;
 	private JButton mSearchButton;
-	private JTextArea mOutputField;
+	private JEditorPane mOutputField;
 	private StatusBar mStatusBar;
 	private StatusBarField mStatusCounter;
 	private StatusBarField mStatusResultCount;
@@ -56,7 +55,7 @@ public class FileSearch
 		mFilter = new JTextField();
 		mSearchFields = new JTextField[5][3];
 		mResultListModel = new DefaultListModel<>();
-		mOutputField = new JTextArea();
+		mOutputField = new JEditorPane();
 
 		mStatusCounter = new StatusBarField(" ");
 		mStatusResultCount = new StatusBarField(" ");
@@ -70,7 +69,11 @@ public class FileSearch
 		mResultList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		mResultList.addListSelectionListener(mListSelectionListener);
 
-		DragAndDrop.register(mResultList, pt -> FILE_FLAVOR, pt -> {System.out.println(mResultList.getSelectedValuesList().size()); return mResultList.getSelectedValuesList().toArray(new File[mResultList.getSelectedValuesList().size()]);}, null);
+		DragAndDrop.register(mResultList, pt -> FILE_FLAVOR, pt ->
+		{
+			System.out.println(mResultList.getSelectedValuesList().size());
+			return mResultList.getSelectedValuesList().toArray(new File[mResultList.getSelectedValuesList().size()]);
+		}, null);
 
 		mSearchButton = new JButton(mSearchAction);
 
@@ -164,9 +167,20 @@ public class FileSearch
 			{
 				try
 				{
-					String s = new String(Streams.readAll(mResultListModel.get(mResultList.getSelectedIndex())));
+					String s = "<html><body style='font-family:courier new;'>" + new String(Streams.readAll(mResultListModel.get(mResultList.getSelectedIndex()))).replace("\n", "<br/>") + "</body></html>";
 
-					mOutputField.setLineWrap(!s.contains("\n"));
+					for (JTextField[] tf : mSearchFields)
+					{
+						for (JTextField t : tf)
+						{
+							if (!t.getText().isEmpty())
+							{
+								s = s.replace(t.getText(), "<span style='background-color:#ffff88;color:#444400;'>" + t.getText() + "</span>");
+							}
+						}
+					}
+
+					mOutputField.setContentType("text/html");
 					mOutputField.setText(s);
 					mOutputField.setCaretPosition(0);
 					mOutputField.invalidate();
