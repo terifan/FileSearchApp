@@ -1,6 +1,7 @@
 package org.terifan.apps.file_search;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -22,6 +23,8 @@ import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.plaf.basic.BasicTextUI;
+import javax.swing.text.DefaultHighlighter;
 import org.terifan.io.Streams;
 import org.terifan.ui.DragAndDrop;
 import static org.terifan.ui.DragAndDrop.FILE_FLAVOR;
@@ -153,7 +156,7 @@ public class FileSearch
 
 		JFrame frame = new JFrame("FileSearch");
 		frame.add(mainPanel);
-		frame.setSize(1024, 768);
+		frame.setSize(1400, 900);
 		frame.setLocationRelativeTo(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setVisible(true);
@@ -167,25 +170,51 @@ public class FileSearch
 			{
 				try
 				{
-					String s = "<html><body style='font-family:courier new;'>" + new String(Streams.readAll(mResultListModel.get(mResultList.getSelectedIndex()))).replace("\n", "<br/>") + "</body></html>";
+					String s = "<html><body style='font-family:courier new;text-size:10px;'>" + new String(Streams.readAll(mResultListModel.get(mResultList.getSelectedIndex()))).replace("\n", "<br/>") + "</body></html>";
 
-					for (JTextField[] tf : mSearchFields)
-					{
-						for (JTextField t : tf)
-						{
-							if (!t.getText().isEmpty())
-							{
-								s = s.replace(t.getText(), "<span style='background-color:#ffff88;color:#444400;'>" + t.getText() + "</span>");
-							}
-						}
-					}
+					BasicTextUI.BasicHighlighter highlighter = new BasicTextUI.BasicHighlighter();
 
 					mOutputField.setContentType("text/html");
 					mOutputField.setText(s);
 					mOutputField.setCaretPosition(0);
+					mOutputField.setHighlighter(highlighter);
 					mOutputField.invalidate();
 					mOutputField.validate();
 					mOutputField.repaint();
+
+					for (JTextField[] textFields : mSearchFields)
+					{
+						for (JTextField textField : textFields)
+						{
+							String t = textField.getText();
+
+							if (!t.isEmpty())
+							{
+//								for (int offset = 0; offset != -1; )
+//								{
+//									try
+//									{
+//										offset = s.indexOf(t, offset);
+//										System.out.println(offset);
+//										if (offset == -1)
+//										{
+//											break;
+//										}
+//
+//										highlighter.addHighlight(offset, offset + t.length(), new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW));
+//									}
+//									catch (Exception e)
+//									{
+//										e.printStackTrace(System.out);
+//									}
+//
+//									offset += t.length();
+//								}
+
+								s = s.replace(t, "<span style='background-color:#ffff88;color:#444400;'>" + t + "</span>");
+							}
+						}
+					}
 				}
 				catch (IOException e)
 				{
