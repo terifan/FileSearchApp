@@ -299,7 +299,18 @@ public class FileSearch
 
 				private void searchFile(File aFile) throws IOException
 				{
-					byte[] buffer = Streams.readAll(aFile);
+					byte[] buffer;
+
+					try
+					{
+						buffer = Streams.readAll(aFile);
+					}
+					catch (Exception e)
+					{
+						// ignore, file is locked or deleted
+						return;
+					}
+
 					String src = new String(buffer).toLowerCase();
 					boolean rowFound = false;
 
