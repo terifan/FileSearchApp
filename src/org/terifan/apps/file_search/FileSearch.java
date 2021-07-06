@@ -1,7 +1,6 @@
 package org.terifan.apps.file_search;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -12,7 +11,6 @@ import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
-import javax.swing.JEditorPane;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -23,15 +21,12 @@ import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.plaf.basic.BasicTextUI;
-import javax.swing.text.DefaultHighlighter;
-import org.terifan.io.Streams;
 import org.terifan.ui.DragAndDrop;
 import static org.terifan.ui.DragAndDrop.FILE_FLAVOR;
 import org.terifan.ui.Utilities;
 import org.terifan.ui.statusbar.StatusBar;
 import org.terifan.ui.statusbar.StatusBarField;
-import org.terifan.util.ErrorReportWindow;
+import org.terifan.util.AsyncTask;
 import org.terifan.util.log.Log;
 
 
@@ -43,11 +38,13 @@ public class FileSearch
 	private DefaultListModel<File> mResultListModel;
 	private JList<File> mResultList;
 	private JButton mSearchButton;
-	private JEditorPane mOutputField;
+	private JButton mCancelButton;
 	private StatusBar mStatusBar;
 	private StatusBarField mStatusCounter;
 	private StatusBarField mStatusResultCount;
 	private StatusBarField mStatusFile;
+	private FileViewer mFileViewer;
+	private AsyncTask mSearchWorker;
 
 
 	public FileSearch()
@@ -58,7 +55,6 @@ public class FileSearch
 		mFilter = new JTextField();
 		mSearchFields = new JTextField[5][3];
 		mResultListModel = new DefaultListModel<>();
-		mOutputField = new JEditorPane();
 
 		mStatusCounter = new StatusBarField(" ");
 		mStatusResultCount = new StatusBarField(" ");
@@ -72,6 +68,8 @@ public class FileSearch
 		mResultList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		mResultList.addListSelectionListener(mListSelectionListener);
 
+		mFileViewer = new FileViewer();
+
 		DragAndDrop.register(mResultList, pt -> FILE_FLAVOR, pt ->
 		{
 			System.out.println(mResultList.getSelectedValuesList().size());
@@ -79,6 +77,8 @@ public class FileSearch
 		}, null);
 
 		mSearchButton = new JButton(mSearchAction);
+		mCancelButton = new JButton(mCancelAction);
+		mCancelButton.setVisible(false);
 
 		GridBagConstraints c = new GridBagConstraints();
 		c.insets = new Insets(0, 2, 2, 2);
@@ -120,6 +120,8 @@ public class FileSearch
 		c.fill = GridBagConstraints.BOTH;
 		c.gridheight = 2;
 		inputPanel.add(mSearchButton, c);
+		c.gridx = 3;
+		inputPanel.add(mCancelButton, c);
 
 		c.gridx = 0;
 		c.gridy = 1;
@@ -147,7 +149,7 @@ public class FileSearch
 		JPanel progressPanel = new JPanel(new BorderLayout());
 		progressPanel.add(mStatusBar, BorderLayout.CENTER);
 
-		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(mResultList), new JScrollPane(mOutputField));
+		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(mResultList), new JScrollPane(mFileViewer));
 
 		JPanel mainPanel = new JPanel(new BorderLayout());
 		mainPanel.add(inputPanel, BorderLayout.NORTH);
@@ -170,51 +172,7 @@ public class FileSearch
 			{
 				try
 				{
-					String s = "<html><body style='font-family:courier new;text-size:10px;'>" + new String(Streams.readAll(mResultListModel.get(mResultList.getSelectedIndex()))).replace("\n", "<br/>") + "</body></html>";
-
-					BasicTextUI.BasicHighlighter highlighter = new BasicTextUI.BasicHighlighter();
-
-					mOutputField.setContentType("text/html");
-					mOutputField.setText(s);
-					mOutputField.setCaretPosition(0);
-					mOutputField.setHighlighter(highlighter);
-					mOutputField.invalidate();
-					mOutputField.validate();
-					mOutputField.repaint();
-
-					for (JTextField[] textFields : mSearchFields)
-					{
-						for (JTextField textField : textFields)
-						{
-							String t = textField.getText();
-
-							if (!t.isEmpty())
-							{
-//								for (int offset = 0; offset != -1; )
-//								{
-//									try
-//									{
-//										offset = s.indexOf(t, offset);
-//										System.out.println(offset);
-//										if (offset == -1)
-//										{
-//											break;
-//										}
-//
-//										highlighter.addHighlight(offset, offset + t.length(), new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW));
-//									}
-//									catch (Exception e)
-//									{
-//										e.printStackTrace(System.out);
-//									}
-//
-//									offset += t.length();
-//								}
-
-								s = s.replace(t, "<span style='background-color:#ffff88;color:#444400;'>" + t + "</span>");
-							}
-						}
-					}
+					mFileViewer.update(mResultListModel.get(mResultList.getSelectedIndex()), mSearchFields);
 				}
 				catch (IOException e)
 				{
@@ -224,137 +182,84 @@ public class FileSearch
 		}
 	};
 
+	private AbstractAction mCancelAction = new AbstractAction("Cancel")
+	{
+		@Override
+		public void actionPerformed(ActionEvent aE)
+		{
+			mSearchWorker.cancel();
+		}
+	};
+
 	private AbstractAction mSearchAction = new AbstractAction("Search files")
 	{
 		@Override
 		public void actionPerformed(ActionEvent aE)
 		{
-			new Thread()
+			mSearchWorker = new SearchWorker(new File(mPath.getText()), mFilter.getText(), mSearchFields)
 			{
-				int mFileCount;
-				int mFileSize;
+				int fileCount;
+
+				@Override
+				protected void onPreExecute()
+				{
+					mResultList.clearSelection();
+					mResultListModel.clear();
+					mFileViewer.clear();
+					mStatusCounter.setText("");
+					mStatusFile.setText("");
+					mStatusResultCount.setText("No results");
+					mSearchButton.setVisible(false);
+					mCancelButton.setVisible(true);
+				}
 
 
 				@Override
-				public void run()
+				protected void onProgressUpdate(File aFile)
 				{
-					try
-					{
-						mSearchButton.setEnabled(false);
-
-						mResultList.clearSelection();
-						mResultListModel.clear();
-						mOutputField.setText("");
-						mStatusCounter.setText("");
-						mStatusFile.setText("");
-						mStatusResultCount.setText("No results");
-
-						searchDir(new File(mPath.getText()), mFilter.getText());
-
-						mStatusFile.setText("Done");
-						mStatusBar.repaint();
-
-						mResultList.invalidate();
-						mResultList.revalidate();
-					}
-					catch (Exception e)
-					{
-						ErrorReportWindow.show(e);
-					}
-					finally
-					{
-						mSearchButton.setEnabled(true);
-					}
-				}
-
-
-				private void searchDir(File aDirectory, String aFilter) throws IOException
-				{
-					System.out.println("Visting directory: " + aDirectory);
-
-					long start = System.currentTimeMillis();
-
-					File[] listFiles = aDirectory.listFiles();
-
-					System.out.println(listFiles.length + " loaded in " + (System.currentTimeMillis() - start));
-
-					for (File file : listFiles)
-					{
-						if (file.isFile())
-						{
-							String name = file.getName().toLowerCase();
-
-							if (aFilter.isEmpty() || name.matches(aFilter.replace(".", "\\.").replace("*", ".*")))
-							{
-								searchFile(file);
-							}
-						}
-						else
-						{
-							searchDir(file, aFilter);
-						}
-					}
-				}
-
-
-				private void searchFile(File aFile) throws IOException
-				{
-					byte[] buffer;
-
-					try
-					{
-						buffer = Streams.readAll(aFile);
-					}
-					catch (Exception e)
-					{
-						// ignore, file is locked or deleted
-						return;
-					}
-
-					String src = new String(buffer).toLowerCase();
-					boolean rowFound = false;
-
-					mFileCount++;
-					mFileSize += buffer.length;
-
-					mStatusCounter.setText(mFileCount + " files searched");
+					mStatusCounter.setText(++fileCount + " files searched");
 					mStatusFile.setText("Reading " + aFile.getAbsolutePath());
 					mStatusBar.repaint();
-
-					for (JTextField[] tfs : mSearchFields)
-					{
-						boolean elementFound = true;
-						boolean hasValue = false;
-						for (JTextField tf : tfs)
-						{
-							if (!tf.getText().trim().isEmpty())
-							{
-								elementFound &= src.contains(tf.getText().trim().toLowerCase());
-								hasValue = true;
-							}
-						}
-						if (hasValue)
-						{
-							rowFound |= elementFound;
-						}
-					}
-					if (rowFound)
-					{
-						SwingUtilities.invokeLater(() ->
-						{
-							try
-							{
-								mResultListModel.addElement(aFile);
-								mStatusResultCount.setText(mResultListModel.size() + " files found");
-								mStatusBar.repaint();
-							}
-							catch (Exception e)
-							{
-							}
-						});
-					}
 				}
-			}.start();
+
+
+				@Override
+				protected void onPostExecute(File aResult) throws Throwable
+				{
+					onCancelled(aResult);
+				}
+
+
+				@Override
+				protected void onCancelled(File aResult) throws Throwable
+				{
+					mStatusFile.setText("Done");
+					mStatusBar.repaint();
+					mResultList.invalidate();
+					mResultList.revalidate();
+					mSearchButton.setVisible(true);
+					mCancelButton.setVisible(false);
+				}
+
+
+				@Override
+				protected void onResultUpdate(File aFile)
+				{
+					SwingUtilities.invokeLater(() ->
+					{
+						try
+						{
+							mResultListModel.addElement(aFile);
+							mStatusResultCount.setText(mResultListModel.size() + " files found");
+							mStatusBar.repaint();
+						}
+						catch (Exception e)
+						{
+							// ignore
+						}
+					});
+				}
+			}.execute();
 		}
 	};
 
