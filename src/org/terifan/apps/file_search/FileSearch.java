@@ -24,8 +24,8 @@ import javax.swing.event.ListSelectionListener;
 import org.terifan.ui.DragAndDrop;
 import static org.terifan.ui.DragAndDrop.FILE_FLAVOR;
 import org.terifan.ui.Utilities;
-import org.terifan.ui.statusbar.StatusBar;
-import org.terifan.ui.statusbar.StatusBarField;
+import org.terifan.apps.file_search.ui.statusbar.StatusBar;
+import org.terifan.apps.file_search.ui.statusbar.StatusBarField;
 import org.terifan.util.AsyncTask;
 import org.terifan.util.log.Log;
 
