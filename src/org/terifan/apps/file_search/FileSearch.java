@@ -7,10 +7,12 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -26,6 +28,7 @@ import static org.terifan.ui.DragAndDrop.FILE_FLAVOR;
 import org.terifan.ui.Utilities;
 import org.terifan.apps.file_search.ui.statusbar.StatusBar;
 import org.terifan.apps.file_search.ui.statusbar.StatusBarField;
+import org.terifan.apps.hexviewer.HexTextPane;
 import org.terifan.util.AsyncTask;
 import org.terifan.util.log.Log;
 
@@ -34,6 +37,8 @@ public class FileSearch
 {
 	private JTextField mPath;
 	private JTextField mFilter;
+	private JTextField mMinFileLength;
+	private JTextField mMaxFileLength;
 	private JTextField[][] mSearchFields;
 	private DefaultListModel<File> mResultListModel;
 	private JList<File> mResultList;
@@ -43,16 +48,19 @@ public class FileSearch
 	private StatusBarField mStatusCounter;
 	private StatusBarField mStatusResultCount;
 	private StatusBarField mStatusFile;
-	private FileViewer mFileViewer;
+	private JComponent mFileViewer;
 	private AsyncTask mSearchWorker;
+	private JPanel mContentPane;
 
 
 	public FileSearch()
 	{
 		Utilities.setSystemLookAndFeel();
 
-		mPath = new JTextField();
+		mPath = new JTextField("C:\\Program Files (x32)\\glassfish-4");
 		mFilter = new JTextField();
+		mMinFileLength = new JTextField("0");
+		mMaxFileLength = new JTextField("1g");
 		mSearchFields = new JTextField[5][3];
 		mResultListModel = new DefaultListModel<>();
 
@@ -68,7 +76,7 @@ public class FileSearch
 		mResultList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		mResultList.addListSelectionListener(mListSelectionListener);
 
-		mFileViewer = new FileViewer();
+		mFileViewer = new JLabel("");
 
 		DragAndDrop.register(mResultList, pt -> FILE_FLAVOR, pt ->
 		{
@@ -138,18 +146,39 @@ public class FileSearch
 
 		c.gridx = 0;
 		c.gridy = 3;
-		c.gridwidth = 3;
-		inputPanel.add(new JLabel("Search"), c);
+		c.weightx = 0;
+		c.gridheight = 1;
+		inputPanel.add(new JLabel("MinFileLength"), c);
+		c.gridx = 1;
+		c.weightx = 1;
+		inputPanel.add(mMinFileLength, c);
+
 		c.gridx = 0;
 		c.gridy = 4;
-		c.insets = new Insets(0, 0, 4, 0);
+		c.weightx = 0;
+		c.gridheight = 1;
+		inputPanel.add(new JLabel("MaxFileLength"), c);
+		c.gridx = 1;
+		c.weightx = 1;
+		inputPanel.add(mMaxFileLength, c);
 
+		c.gridx = 0;
+		c.gridy = 5;
+		c.gridwidth = 3;
+		inputPanel.add(new JLabel("Search"), c);
+
+		c.gridx = 0;
+		c.gridy = 6;
+		c.insets = new Insets(0, 0, 4, 0);
 		inputPanel.add(searchPanel, c);
 
 		JPanel progressPanel = new JPanel(new BorderLayout());
 		progressPanel.add(mStatusBar, BorderLayout.CENTER);
 
-		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(mResultList), new JScrollPane(mFileViewer));
+		mContentPane = new JPanel(new BorderLayout());
+		mContentPane.add(mFileViewer, BorderLayout.CENTER);
+
+		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(mResultList), mContentPane);
 
 		JPanel mainPanel = new JPanel(new BorderLayout());
 		mainPanel.add(inputPanel, BorderLayout.NORTH);
@@ -172,7 +201,38 @@ public class FileSearch
 			{
 				try
 				{
-					mFileViewer.update(mResultListModel.get(mResultList.getSelectedIndex()), mSearchFields);
+					ArrayList<String> highlight = new ArrayList<>();
+					for (JTextField[] textFields : mSearchFields)
+					{
+						for (JTextField textField : textFields)
+						{
+							String s = textField.getText().trim();
+							if (!s.isEmpty())
+							{
+								highlight.add(s);
+							}
+						}
+					}
+
+					closeFileViewer();
+
+					File file = mResultListModel.get(mResultList.getSelectedIndex());
+
+					if (file.length() > 10000000)
+					{
+						mFileViewer = new HexTextPane(file);
+					}
+					else
+					{
+						mFileViewer = new PlainTextPane(file, highlight);
+					}
+					mContentPane.removeAll();
+					mContentPane.add(mFileViewer, BorderLayout.CENTER);
+					mContentPane.invalidate();
+					mContentPane.validate();
+					mFileViewer.invalidate();
+					mFileViewer.validate();
+					mFileViewer.repaint();
 				}
 				catch (IOException e)
 				{
@@ -196,17 +256,19 @@ public class FileSearch
 		@Override
 		public void actionPerformed(ActionEvent aE)
 		{
-			mSearchWorker = new SearchWorker(new File(mPath.getText()), mFilter.getText(), mSearchFields)
+			long min = Long.parseLong(mMinFileLength.getText().toLowerCase().replaceAll(" ", "").replace("k", "000").replace("m", "000000").replace("g", "000000000"));
+			long max = Long.parseLong(mMaxFileLength.getText().toLowerCase().replaceAll(" ", "").replace("k", "000").replace("m", "000000").replace("g", "000000000"));
+
+			mSearchWorker = new SearchWorker(new File(mPath.getText()), mFilter.getText(), mSearchFields, min, max)
 			{
 				int fileCount;
 
 				@Override
 				protected void onPreExecute()
 				{
+					closeFileViewer();
 					mResultList.clearSelection();
 					mResultListModel.clear();
-					mFileViewer.clear();
-					mStatusCounter.setText("");
 					mStatusFile.setText("");
 					mStatusResultCount.setText("No results");
 					mSearchButton.setVisible(false);
@@ -274,5 +336,22 @@ public class FileSearch
 		{
 			e.printStackTrace(System.out);
 		}
+	}
+
+
+	private void closeFileViewer()
+	{
+		if (mFileViewer instanceof PlainTextPane)
+		{
+			((PlainTextPane)mFileViewer).close();
+		}
+		else if (mFileViewer instanceof HexTextPane)
+		{
+			((HexTextPane)mFileViewer).close();
+		}
+
+		mFileViewer = new JLabel("");
+		mContentPane.removeAll();
+		mContentPane.add(mFileViewer, BorderLayout.CENTER);
 	}
 }

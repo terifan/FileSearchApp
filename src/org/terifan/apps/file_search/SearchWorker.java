@@ -12,13 +12,17 @@ public class SearchWorker extends AsyncTask<File, File>
 	private File mDirectory;
 	private JTextField[][] mSearchFields;
 	private String mFilter;
+	private long mMinFileLength;
+	private long mMaxFileLength;
 
 
-	public SearchWorker(File aDirectory, String aFilter, JTextField[][] aSearchFields)
+	public SearchWorker(File aDirectory, String aFilter, JTextField[][] aSearchFields, long aMinFileLength, long aMaxFileLength)
 	{
 		mDirectory = aDirectory;
 		mFilter = aFilter;
 		mSearchFields = aSearchFields;
+		mMinFileLength = aMinFileLength;
+		mMaxFileLength = aMaxFileLength;
 	}
 
 
@@ -48,11 +52,16 @@ public class SearchWorker extends AsyncTask<File, File>
 			}
 			if (file.isFile())
 			{
-				String name = file.getName().toLowerCase();
+				long len = file.length();
 
-				if (aFilter.isEmpty() || name.matches(aFilter.replace(".", "\\.").replace("*", ".*")))
+				if (len >= mMinFileLength && len < mMaxFileLength)
 				{
-					searchFile(file);
+					String name = file.getName().toLowerCase();
+
+					if (aFilter.isEmpty() || name.matches(aFilter.replace(".", "\\.").replace("*", ".*")))
+					{
+						searchFile(file);
+					}
 				}
 			}
 			else
