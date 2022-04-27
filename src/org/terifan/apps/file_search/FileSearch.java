@@ -57,7 +57,7 @@ public class FileSearch
 	{
 		Utilities.setSystemLookAndFeel();
 
-		mPath = new JTextField("C:\\Program Files (x32)\\glassfish-4");
+		mPath = new JTextField();
 		mFilter = new JTextField();
 		mMinFileLength = new JTextField("0");
 		mMaxFileLength = new JTextField("1g");
