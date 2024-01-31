@@ -29,8 +29,7 @@ import org.terifan.ui.Utilities;
 import org.terifan.apps.file_search.ui.statusbar.StatusBar;
 import org.terifan.apps.file_search.ui.statusbar.StatusBarField;
 import org.terifan.apps.hexviewer.HexTextPane;
-import org.terifan.util.AsyncTask;
-import org.terifan.util.log.Log;
+import org.terifan.concurrent.AsyncTask;
 
 
 public class FileSearch
@@ -236,7 +235,7 @@ public class FileSearch
 				}
 				catch (IOException e)
 				{
-					e.printStackTrace(Log.out);
+					e.printStackTrace(System.out);
 				}
 			});
 		}
@@ -262,6 +261,7 @@ public class FileSearch
 			mSearchWorker = new SearchWorker(new File(mPath.getText()), mFilter.getText(), mSearchFields, min, max)
 			{
 				int fileCount;
+
 
 				@Override
 				protected void onPreExecute()

@@ -3,11 +3,11 @@ package org.terifan.apps.file_search;
 import java.io.File;
 import java.io.IOException;
 import javax.swing.JTextField;
+import org.terifan.concurrent.AsyncTask;
 import org.terifan.io.Streams;
-import org.terifan.util.AsyncTask;
 
 
-public class SearchWorker extends AsyncTask<File, File>
+public class SearchWorker extends AsyncTask<File, File, File>
 {
 	private File mDirectory;
 	private JTextField[][] mSearchFields;
@@ -27,7 +27,7 @@ public class SearchWorker extends AsyncTask<File, File>
 
 
 	@Override
-	protected final File doInBackground() throws IOException
+	protected File doInBackground(File aParam) throws Throwable
 	{
 		searchDir(mDirectory, mFilter);
 		return null;
