@@ -30,6 +30,7 @@ public class PlainTextPane extends JPanel
 		String text = new String(Streams.readAll(aFile), "utf-8");
 
 		String body = "<html><body style='font-family:courier new;text-size:10px;'><pre>" + text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;") + "</pre></body></html>";
+//		String body = "<html><body style='font-family:courier new;text-size:10px;'>" + text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\r","").replace("\n", "<br/>") + "</body></html>";
 
 		mEditor.setContentType("text/html");
 		mEditor.setText(body);
