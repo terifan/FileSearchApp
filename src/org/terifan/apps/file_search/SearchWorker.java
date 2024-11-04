@@ -7,7 +7,7 @@ import org.terifan.concurrent.AsyncTask;
 import org.terifan.io.Streams;
 
 
-public class SearchWorker extends AsyncTask<String, File, File>
+public class SearchWorker extends AsyncTask<File, File, File>
 {
 	private File mDirectory;
 	private JTextField[][] mSearchFields;
@@ -27,7 +27,7 @@ public class SearchWorker extends AsyncTask<String, File, File>
 
 
 	@Override
-	protected final File doInBackground(String aDummy) throws IOException
+	protected File doInBackground(File aParam) throws Throwable
 	{
 		searchDir(mDirectory, mFilter);
 		return null;

@@ -30,7 +30,6 @@ import org.terifan.apps.file_search.ui.statusbar.StatusBar;
 import org.terifan.apps.file_search.ui.statusbar.StatusBarField;
 import org.terifan.apps.hexviewer.HexTextPane;
 import org.terifan.concurrent.AsyncTask;
-import org.terifan.util.log.Log;
 
 
 public class FileSearch
@@ -218,7 +217,7 @@ public class FileSearch
 
 					File file = mResultListModel.get(mResultList.getSelectedIndex());
 
-					if (file.length() > 1000000)
+					if (file.length() > 10000000)
 					{
 						mFileViewer = new HexTextPane(file);
 					}
@@ -236,7 +235,7 @@ public class FileSearch
 				}
 				catch (IOException e)
 				{
-					e.printStackTrace(Log.out);
+					e.printStackTrace(System.out);
 				}
 			});
 		}
@@ -245,7 +244,7 @@ public class FileSearch
 	private AbstractAction mCancelAction = new AbstractAction("Cancel")
 	{
 		@Override
-		public void actionPerformed(ActionEvent aEvent)
+		public void actionPerformed(ActionEvent aE)
 		{
 			mSearchWorker.cancel();
 		}
@@ -262,6 +261,7 @@ public class FileSearch
 			mSearchWorker = new SearchWorker(new File(mPath.getText()), mFilter.getText(), mSearchFields, min, max)
 			{
 				int fileCount;
+
 
 				@Override
 				protected void onPreExecute()
