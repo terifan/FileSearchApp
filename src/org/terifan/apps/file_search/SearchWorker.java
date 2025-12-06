@@ -3,7 +3,7 @@ package org.terifan.apps.file_search;
 import java.io.File;
 import java.io.IOException;
 import javax.swing.JTextField;
-import org.terifan.concurrent.AsyncTask;
+import org.terifan.util.concurrent.AsyncTask;
 import org.terifan.io.Streams;
 
 

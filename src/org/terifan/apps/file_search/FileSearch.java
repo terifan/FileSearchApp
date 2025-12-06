@@ -29,7 +29,7 @@ import org.terifan.ui.Utilities;
 import org.terifan.apps.file_search.ui.statusbar.StatusBar;
 import org.terifan.apps.file_search.ui.statusbar.StatusBarField;
 import org.terifan.apps.hexviewer.HexTextPane;
-import org.terifan.concurrent.AsyncTask;
+import org.terifan.util.concurrent.AsyncTask;
 
 
 public class FileSearch
