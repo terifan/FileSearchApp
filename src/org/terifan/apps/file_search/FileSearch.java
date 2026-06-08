@@ -196,7 +196,7 @@ public class FileSearch
 	{
 		if (!aEvent.getValueIsAdjusting() && mResultList.getSelectedIndex() != -1)
 		{
-			SwingUtilities.invokeLater(() ->
+			new Thread(() ->
 			{
 				try
 				{
@@ -237,7 +237,7 @@ public class FileSearch
 				{
 					e.printStackTrace(System.out);
 				}
-			});
+			}).start();
 		}
 	};
 
